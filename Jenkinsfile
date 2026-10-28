@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -54,8 +55,21 @@ pipeline {
         stage('Deploy AquaGuard') {
             steps {
                 bat '''
+                    @echo off
+
+                    REM Create the Docker network if it does not exist
+                    docker network inspect aqua_project_default >NUL 2>&1
+                    if errorlevel 1 (
+                        docker network create aqua_project_default
+                    )
+
+                    REM Remove the old container if it exists
                     docker rm -f aquaguard-app 2>NUL
+
+                    REM Start the new container
                     docker run -d --name aquaguard-app --network aqua_project_default --restart unless-stopped -p 5001:5000 aquaguard:latest
+
+                    if errorlevel 1 exit /b 1
                 '''
             }
         }
